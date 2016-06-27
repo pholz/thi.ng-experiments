@@ -86,7 +86,42 @@
 
           "foo3.stl" 1e6)
 
+(defn rotate-face
+  [side angle & {:keys [out]}]
+  {:op :rotate-face
+   :args {:side side :angle angle}
+   :out (mg/operator-output 1 out false)})
+
+(defmethod mg/operator [BoxNode :rotate-face]
+  [{[a b c d e f g h] :points :as node}
+   {{:keys [side angle]} :args :as op}]
+  (let [tfn #(let [ctr (g/div (-> b (g/+ c) (g/+ f) (g/+ g)) 4.0)]
+               (-> % (g/- ctr) (g/rotate-z angle) (g/+ ctr))) #_(g/+ % (v/vec3 (Math/cos angle) (Math/sin angle) 0))]
+    [(BoxNode.
+      (case side
+        :f [a (tfn b) (tfn c) d e (tfn f) (tfn g) h]
+        :b [(tfn a) b c (tfn d) (tfn e) f g (tfn h)]
+        :w [(tfn a) (tfn b) c d (tfn e) (tfn f) g h]
+        :e [a b (tfn c) (tfn d) e f (tfn g) (tfn h)]
+        :s [(tfn a) (tfn b) (tfn c) (tfn d) e f g h]
+        :n [a b c d (tfn e) (tfn f) (tfn g) (tfn h)]
+
+        [a b c d e f g h])
+      node op (inc (mg/tree-depth node)))]))
+
+(save-stl (mg/seed-box (a/aabb 1 1 0.8))
+          (mg/subdiv :cols 3 :rows 3 :empty? true :out {4 (mg/extrude :len 4 :out [(mg/subdiv :rows 4 :out [{} {} {} (mg/extrude :len 3 :dir :w)])])
+                                                        5 (mg/extrude :len 3 :out [(rotate-face :f (/ Math/PI 3.0))])})
+
+
+
+          "foo4.stl" 1e6)
+
 (take 64 (repeat {}))
+
+(/ Math/PI 3.0)
+
+(Math/cos Math/PI)
 
 (mapv)
 
